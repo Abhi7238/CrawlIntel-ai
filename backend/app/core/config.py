@@ -7,7 +7,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=Path(__file__).resolve().parents[2] / ".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
 
     app_name: str = "Apify QA Bot"
     app_env: str = "development"
@@ -19,6 +23,7 @@ class Settings(BaseSettings):
     llm_base_url: str = Field(default="", alias="LLM_BASE_URL")
 
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
+    gemini_api_key: str = Field(default="", alias="GEMINI_API_KEY")
     nvidia_api_key: str = Field(default="", alias="NVIDIA_API_KEY")
 
     llm_chat_model: str = Field(default="gpt-4.1-mini", alias="LLM_CHAT_MODEL")
@@ -43,6 +48,8 @@ class Settings(BaseSettings):
     @property
     def active_api_key(self) -> str:
         provider = self.llm_provider.strip().lower()
+        if provider in {"gemini", "google"}:
+            return self.gemini_api_key
         if provider == "nvidia":
             return self.nvidia_api_key
         return self.openai_api_key
@@ -53,6 +60,9 @@ class Settings(BaseSettings):
             return self.llm_base_url.strip()
 
         provider = self.llm_provider.strip().lower()
+        if provider in {"gemini", "google"}:
+            # Gemini provides an OpenAI-compatible endpoint.
+            return "https://generativelanguage.googleapis.com/v1beta/openai/"
         if provider == "nvidia":
             # NVIDIA supports OpenAI-compatible chat and embeddings APIs.
             return "https://integrate.api.nvidia.com/v1"
