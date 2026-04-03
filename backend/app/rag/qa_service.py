@@ -50,12 +50,17 @@ class QAService:
 
         # Preserve already-numbered or bullet-style answers.
         if re.search(r"^\s*\d+[.)]\s+", stripped, flags=re.MULTILINE):
-            return stripped
+            return re.sub(r"\s*(\d+[.)]\s+)", r"\n\1", stripped).strip()
         if re.search(r"^\s*[-*]\s+", stripped, flags=re.MULTILINE):
             lines = [line.strip(" -*\t") for line in stripped.splitlines() if line.strip()]
             points = [line for line in lines if line]
             if points:
                 return "\n".join(f"{idx + 1}. {point}" for idx, point in enumerate(points))
+
+        inline_numbered = re.findall(r"\b\d+[.)]\s+", stripped)
+        if len(inline_numbered) >= 2:
+            normalized = re.sub(r"\s*(\d+[.)]\s+)", r"\n\1", stripped)
+            return normalized.strip()
 
         chunks = [chunk.strip() for chunk in re.split(r"(?<=[.!?])\s+|\n+", stripped) if chunk.strip()]
         if len(chunks) <= 1:

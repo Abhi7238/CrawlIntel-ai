@@ -1,4 +1,4 @@
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, useMemo, useState } from "react";
 
 type Source = {
   source_url: string;
@@ -62,6 +62,49 @@ export default function App() {
     }
   }
 
+  function onQueryKeyDown(event: KeyboardEvent<HTMLTextAreaElement>) {
+    if (event.key !== "Enter" || event.shiftKey) {
+      return;
+    }
+
+    event.preventDefault();
+    if (canAsk) {
+      void onAskFromKeyboard();
+    }
+  }
+
+  async function onAskFromKeyboard() {
+    if (!canAsk) {
+      return;
+    }
+
+    setLoading(true);
+    setQuoteIndex((current) => (current + 1) % THINKING_QUOTES.length);
+    setError("");
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query }),
+      });
+
+      const payload = await res.json();
+
+      if (!res.ok) {
+        setError(payload.detail ?? "Request failed");
+        setResponse(null);
+      } else {
+        setResponse(payload as ChatResponse);
+      }
+    } catch {
+      setError("Could not connect to backend API");
+      setResponse(null);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   return (
     <>
       <main className="shell">
@@ -81,6 +124,7 @@ export default function App() {
               rows={4}
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={onQueryKeyDown}
               placeholder="What does the documentation say about ..."
             />
             <button type="submit" disabled={!canAsk}>
@@ -128,6 +172,7 @@ export default function App() {
                 rows={4}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={onQueryKeyDown}
                 placeholder="What does the documentation say about ..."
               />
               <button type="submit" disabled={!canAsk}>
