@@ -43,6 +43,15 @@ class QAService:
             return "I am your RAG assistant. I can answer questions using the content you scraped and indexed."
         return "Hello. Ask me anything about the pages you have scraped, and I will answer using that indexed content."
 
+    def _should_use_numbered_points(self, query: str) -> bool:
+        normalized = self._normalize(query)
+        list_intent_patterns = [
+            r"\b(list|points|bullet|bullets|steps|top\s*\d+|top|compare|comparison|pros\s*and\s*cons)\b",
+            r"^(what are|which are|show me|give me)\b",
+            r"\b(how to|roadmap|checklist|plan)\b",
+        ]
+        return any(re.search(pattern, normalized) for pattern in list_intent_patterns)
+
     def _force_numbered_points(self, answer_text: str) -> str:
         stripped = answer_text.strip()
         if not stripped:
@@ -101,9 +110,8 @@ class QAService:
                         "Answer only from the provided context. "
                         "If the context is insufficient, say you do not know. "
                         "Always include citation indexes like [1], [2]. "
-                        "Format every non-small-talk answer as a numbered list (1., 2., 3.). "
-                        "Keep each point concise and factual. "
-                        "For list-style questions, return one idea per point with relevant citations on each point."
+                        "Default to a concise paragraph unless the user asks for a list, steps, points, or comparison. "
+                        "For list-style questions, return numbered points (1., 2., 3.) with concise factual items and citations."
                     ),
                 },
                 {
@@ -114,7 +122,8 @@ class QAService:
         )
 
         answer_text = completion.choices[0].message.content or "No response generated."
-        answer_text = self._force_numbered_points(answer_text)
+        if self._should_use_numbered_points(query):
+            answer_text = self._force_numbered_points(answer_text)
 
         sources = [
             {

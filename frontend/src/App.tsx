@@ -162,10 +162,10 @@ export default function App() {
     <>
       <main className="shell">
         <section className="panel hero">
-          <p className="eyebrow">Source-Grounded AI Assistant</p>
-          <h1>Web Intelligence Assistant</h1>
+          <p className="eyebrow">CrawlIntel AI</p>
+          <h1>CrawlIntel AI Assistant</h1>
           <p>
-            Query your indexed web knowledge base with confidence. Responses are generated from retrieved source chunks and include clear citations for traceability.
+            Query your indexed web knowledge base with confidence. CrawlIntel AI generates responses from retrieved source chunks and includes clear citations for traceability.
           </p>
         </section>
 
@@ -283,8 +283,8 @@ export default function App() {
           type="button"
           className="chat-launcher"
           onClick={() => setIsLauncherOpen((current) => !current)}
-          aria-label={isLauncherOpen ? "Close bot" : "Open bot"}
-          title={isLauncherOpen ? "Close bot" : "Open bot"}
+              aria-label={isLauncherOpen ? "Close CrawlIntel AI" : "Open CrawlIntel AI"}
+              title={isLauncherOpen ? "Close CrawlIntel AI" : "Open CrawlIntel AI"}
         >
           <span className="chat-launcher-icon" aria-hidden="true">🤖</span>
         </button>
