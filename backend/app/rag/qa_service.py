@@ -15,33 +15,54 @@ class QAService:
     def _normalize(self, query: str) -> str:
         return " ".join(query.strip().lower().split())
 
-    def _is_small_talk(self, query: str) -> bool:
-        normalized = self._normalize(query)
-        if not normalized:
-            return True
+    def _route_query(self, query: str) -> str:
+        completion = self.client.chat.completions.create(
+            model=self.settings.llm_chat_model,
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Classify the user's question into one of two routes: GENERAL or CORPUS. "
+                        "Use CORPUS only when the answer should come from the user's scraped/indexed content, "
+                        "uploaded pages, stored documents, sources, or corpus-specific facts. "
+                        "Use GENERAL for greetings, small talk, and normal questions that should be answered directly. "
+                        "Return exactly one word: GENERAL or CORPUS."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": query,
+                },
+            ],
+        )
 
-        if len(normalized) > 80:
-            return False
+        route = (completion.choices[0].message.content or "GENERAL").strip().upper()
+        if "CORPUS" in route:
+            return "corpus"
+        return "general"
 
-        patterns = [
-            r"^(hi|hello|hey|yo|hola)$",
-            r"^(good\s*(morning|afternoon|evening|night))$",
-            r"^(how are you|how are u|what's up|whats up)$",
-            r"^(thanks|thank you|thx|ty)$",
-            r"^(bye|goodbye|see you|cya)$",
-            r"^(who are you|what can you do)$",
-        ]
-        return any(re.match(pattern, normalized) for pattern in patterns)
+    def _general_answer(self, query: str) -> str:
+        completion = self.client.chat.completions.create(
+            model=self.settings.llm_chat_model,
+            temperature=0,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Answer as a helpful general-purpose assistant. "
+                        "Do not mention sources unless the user asks for them. "
+                        "Default to a concise paragraph unless the user clearly asks for a list, steps, or comparison."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": query,
+                },
+            ],
+        )
 
-    def _small_talk_response(self, query: str) -> str:
-        normalized = self._normalize(query)
-        if normalized in {"thanks", "thank you", "thx", "ty"}:
-            return "You are welcome. Ask me a question about your scraped content whenever you are ready."
-        if normalized in {"bye", "goodbye", "see you", "cya"}:
-            return "Goodbye. I am here whenever you want to continue."
-        if normalized in {"who are you", "what can you do"}:
-            return "I am your RAG assistant. I can answer questions using the content you scraped and indexed."
-        return "Hello. Ask me anything about the pages you have scraped, and I will answer using that indexed content."
+        return completion.choices[0].message.content or "No response generated."
 
     def _should_use_numbered_points(self, query: str) -> bool:
         normalized = self._normalize(query)
@@ -78,8 +99,13 @@ class QAService:
         return "\n".join(f"{idx + 1}. {chunk}" for idx, chunk in enumerate(chunks))
 
     def answer(self, query: str) -> dict:
-        if self._is_small_talk(query):
-            return {"answer": self._small_talk_response(query), "sources": []}
+        route = self._route_query(query)
+
+        if route == "general":
+            answer_text = self._general_answer(query)
+            if self._should_use_numbered_points(query):
+                answer_text = self._force_numbered_points(answer_text)
+            return {"answer": answer_text, "sources": []}
 
         hits = self.retriever.retrieve(query)
 

@@ -21,6 +21,14 @@ const THINKING_QUOTES = [
   "\"Finding the sharpest citation trail...\"",
 ];
 
+function BotIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="chat-launcher-icon" aria-hidden="true">
+      <path d="M12 2a1 1 0 0 1 1 1v1.08A6 6 0 0 1 18 10v1h1a3 3 0 0 1 3 3v3a3 3 0 0 1-3 3h-1v1a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2v-1H5a3 3 0 0 1-3-3v-3a3 3 0 0 1 3-3h1v-1a6 6 0 0 1 5-5.92V3a1 1 0 0 1 1-1Zm0 5a4 4 0 0 0-4 4v7a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-7a4 4 0 0 0-4-4Zm-2 4.5a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Zm4 0a1.25 1.25 0 1 1 0 2.5 1.25 1.25 0 0 1 0-2.5Z" />
+    </svg>
+  );
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? (window.location.hostname === "localhost" ? "http://localhost:8000" : "");
 
 function parseAnswer(answer: string): AnswerBlock {
@@ -286,7 +294,7 @@ export default function App() {
               aria-label={isLauncherOpen ? "Close CrawlIntel AI" : "Open CrawlIntel AI"}
               title={isLauncherOpen ? "Close CrawlIntel AI" : "Open CrawlIntel AI"}
         >
-          <span className="chat-launcher-icon" aria-hidden="true">🤖</span>
+          <BotIcon />
         </button>
       </div>
     </>

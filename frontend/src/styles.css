@@ -1,11 +1,15 @@
 :root {
-  --bg: #f5f2e9;
-  --bg-2: #efe7d4;
-  --ink: #1f2a2d;
-  --accent: #cc5500;
-  --accent-2: #008b8b;
-  --panel: rgba(255, 255, 255, 0.72);
-  --border: rgba(31, 42, 45, 0.16);
+  --bg: #050608;
+  --bg-2: #0c1016;
+  --bg-3: #131720;
+  --ink: #ebeff5;
+  --muted: #9aa4b2;
+  --accent: #7ee0ff;
+  --accent-2: #8c8cff;
+  --panel: rgba(11, 14, 20, 0.84);
+  --panel-2: rgba(18, 22, 30, 0.92);
+  --border: rgba(255, 255, 255, 0.08);
+  --shadow: rgba(0, 0, 0, 0.45);
 }
 
 * {
@@ -17,7 +21,10 @@ body {
   font-family: "Space Grotesk", sans-serif;
   color: var(--ink);
   min-height: 100vh;
-  background: radial-gradient(circle at 20% 0%, #fff7e4 0%, var(--bg) 48%, var(--bg-2) 100%);
+  background:
+    radial-gradient(circle at 20% 0%, rgba(124, 224, 255, 0.12) 0%, transparent 38%),
+    radial-gradient(circle at 80% 20%, rgba(140, 140, 255, 0.12) 0%, transparent 34%),
+    linear-gradient(180deg, var(--bg) 0%, var(--bg-2) 50%, var(--bg-3) 100%);
 }
 
 .shell {
@@ -32,8 +39,8 @@ body {
   border-radius: 20px;
   padding: 1.25rem;
   background: var(--panel);
-  box-shadow: 0 10px 25px rgba(25, 27, 28, 0.08);
-  backdrop-filter: blur(5px);
+  box-shadow: 0 18px 40px var(--shadow);
+  backdrop-filter: blur(14px);
 }
 
 .hero {
@@ -42,7 +49,7 @@ body {
 
 .eyebrow {
   margin: 0;
-  color: var(--accent-2);
+  color: var(--accent);
   font-family: "IBM Plex Mono", monospace;
   text-transform: uppercase;
   letter-spacing: 0.08em;
@@ -66,6 +73,12 @@ textarea {
   border: 1px solid var(--border);
   padding: 0.8rem;
   font: inherit;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+textarea::placeholder {
+  color: rgba(154, 164, 178, 0.8);
 }
 
 .ask-form button {
@@ -74,9 +87,10 @@ textarea {
   padding: 0.7rem 1rem;
   width: fit-content;
   color: #fff;
-  background: linear-gradient(120deg, var(--accent), #db7b2b);
+  background: linear-gradient(120deg, var(--accent-2), var(--accent));
   font: inherit;
   cursor: pointer;
+  box-shadow: 0 10px 24px rgba(92, 107, 255, 0.24);
 }
 
 .ask-form button:disabled {
@@ -86,22 +100,22 @@ textarea {
 
 .thinking-panel {
   margin-top: 0.75rem;
-  border: 1px dashed rgba(0, 139, 139, 0.35);
+  border: 1px dashed rgba(126, 224, 255, 0.24);
   border-radius: 12px;
   padding: 0.7rem 0.8rem;
-  background: rgba(0, 139, 139, 0.06);
+  background: rgba(126, 224, 255, 0.06);
 }
 
 .thinking-title {
   margin: 0;
   font-weight: 700;
-  color: #05595b;
+  color: var(--accent);
 }
 
 .thinking-quote {
   margin: 0.35rem 0 0;
   font-size: 0.92rem;
-  color: #374245;
+  color: var(--muted);
 }
 
 .dot-stream {
@@ -147,13 +161,13 @@ textarea {
   border-radius: 999px;
   border: 0;
   color: #fff;
-  background: linear-gradient(135deg, var(--accent-2), #12a1a1, var(--accent));
-  box-shadow: 0 16px 30px rgba(8, 72, 72, 0.35);
+  background: linear-gradient(135deg, #121826 0%, #23283b 50%, #090b10 100%);
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.48);
   cursor: pointer;
-  font-size: 1.65rem;
   display: grid;
   place-items: center;
   transition: transform 0.16s ease;
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .chat-launcher:hover {
@@ -165,7 +179,10 @@ textarea {
 }
 
 .chat-launcher-icon {
-  transform: translateY(1px);
+  width: 26px;
+  height: 26px;
+  fill: currentColor;
+  opacity: 0.95;
 }
 
 .result ul {
@@ -178,7 +195,7 @@ textarea {
 }
 
 .result a {
-  color: #024343;
+  color: var(--accent);
   text-decoration: none;
   font-weight: 600;
 }
@@ -200,11 +217,11 @@ textarea {
   margin-left: 0.5rem;
   font-family: "IBM Plex Mono", monospace;
   font-size: 0.82rem;
-  color: #4f565a;
+  color: var(--muted);
 }
 
 .error {
-  color: #a12626;
+  color: #ff8d8d;
 }
 
 @keyframes fade-slide {
