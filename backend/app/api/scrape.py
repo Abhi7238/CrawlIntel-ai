@@ -87,8 +87,11 @@ def reindex() -> StatusResponse:
 
 @router.get("/status", response_model=StatusResponse)
 def status() -> StatusResponse:
-    with SessionLocal() as db:
-        job = get_latest_job(db)
+    try:
+        with SessionLocal() as db:
+            job = get_latest_job(db)
+    except Exception as exc:
+        raise HTTPException(status_code=503, detail=f"Database unavailable: {exc}")
 
     if job is None:
         return StatusResponse(status="idle", message="Ready", scraped_documents=0, indexed_chunks=0)

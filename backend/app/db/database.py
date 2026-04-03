@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import logging
 from pathlib import Path
 
 from sqlalchemy.exc import OperationalError
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.core.config import get_settings
 
 settings = get_settings()
+logger = logging.getLogger(__name__)
 
 
 def _normalize_database_url(database_url: str) -> str:
@@ -44,5 +46,6 @@ def init_db() -> None:
 
     try:
         Base.metadata.create_all(bind=engine)
-    except OperationalError:
+    except OperationalError as exc:
+        logger.exception("Database initialization failed: %s", exc)
         return
