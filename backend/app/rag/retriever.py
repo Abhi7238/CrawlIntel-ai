@@ -1,3 +1,5 @@
+import json
+import re
 import numpy as np
 import time
 from openai import OpenAI
@@ -61,6 +63,67 @@ class Retriever:
         response = self.client.embeddings.create(**request_kwargs)
         return response.data[0].embedding
 
+    def _llm_select_chunk_ids(self, query: str, candidates: list[dict]) -> list[str]:
+        candidate_blocks: list[str] = []
+        for item in candidates:
+            excerpt = str(item.get("text", "")).replace("\n", " ").strip()
+            if len(excerpt) > 260:
+                excerpt = excerpt[:260] + "..."
+            candidate_blocks.append(
+                "\n".join(
+                    [
+                        f"chunk_id: {item.get('chunk_id', '')}",
+                        f"title: {item.get('title', 'Untitled')}",
+                        f"url: {item.get('source_url', '')}",
+                        f"excerpt: {excerpt}",
+                    ]
+                )
+            )
+
+        completion = self.client.chat.completions.create(
+            model=self.settings.llm_chat_model,
+            temperature=0,
+            max_tokens=220,
+            messages=[
+                {
+                    "role": "system",
+                    "content": (
+                        "Select the most relevant chunk_ids for answering the user question. "
+                        "Return strict JSON only in this shape: {\"chunk_ids\":[\"id1\",\"id2\"]}. "
+                        "Choose at most the requested count and prioritize factual relevance."
+                    ),
+                },
+                {
+                    "role": "user",
+                    "content": (
+                        f"Question: {query}\n"
+                        f"Max chunk_ids: {self.settings.top_k}\n\n"
+                        "Candidates:\n"
+                        + "\n\n".join(candidate_blocks)
+                    ),
+                },
+            ],
+        )
+
+        raw = (completion.choices[0].message.content or "").strip()
+        if not raw:
+            return []
+
+        try:
+            parsed = json.loads(raw)
+            ids = parsed.get("chunk_ids", [])
+            return [str(item) for item in ids if str(item).strip()]
+        except Exception:
+            match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
+            if not match:
+                return []
+            try:
+                parsed = json.loads(match.group(0))
+                ids = parsed.get("chunk_ids", [])
+                return [str(item) for item in ids if str(item).strip()]
+            except Exception:
+                return []
+
     def retrieve(self, query: str) -> list[dict]:
         rows = self._load_rows()
 
@@ -95,4 +158,33 @@ class Retriever:
             scored.append(item)
 
         scored.sort(key=lambda item: item["score"], reverse=True)
-        return scored[: self.settings.top_k]
+
+        if not scored:
+            return []
+
+        candidate_count = min(len(scored), max(self.settings.top_k * 4, 10))
+        candidates = scored[:candidate_count]
+        selected_ids = self._llm_select_chunk_ids(query, candidates)
+
+        if not selected_ids:
+            return candidates[: self.settings.top_k]
+
+        by_id = {item.get("chunk_id", ""): item for item in candidates}
+        selected: list[dict] = []
+        seen: set[str] = set()
+        for chunk_id in selected_ids:
+            if chunk_id in by_id and chunk_id not in seen:
+                selected.append(by_id[chunk_id])
+                seen.add(chunk_id)
+
+        if len(selected) < self.settings.top_k:
+            for item in candidates:
+                chunk_id = str(item.get("chunk_id", ""))
+                if chunk_id in seen:
+                    continue
+                selected.append(item)
+                seen.add(chunk_id)
+                if len(selected) >= self.settings.top_k:
+                    break
+
+        return selected[: self.settings.top_k]
