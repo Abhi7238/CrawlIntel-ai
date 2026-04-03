@@ -43,6 +43,26 @@ class QAService:
             return "I am your RAG assistant. I can answer questions using the content you scraped and indexed."
         return "Hello. Ask me anything about the pages you have scraped, and I will answer using that indexed content."
 
+    def _force_numbered_points(self, answer_text: str) -> str:
+        stripped = answer_text.strip()
+        if not stripped:
+            return answer_text
+
+        # Preserve already-numbered or bullet-style answers.
+        if re.search(r"^\s*\d+[.)]\s+", stripped, flags=re.MULTILINE):
+            return stripped
+        if re.search(r"^\s*[-*]\s+", stripped, flags=re.MULTILINE):
+            lines = [line.strip(" -*\t") for line in stripped.splitlines() if line.strip()]
+            points = [line for line in lines if line]
+            if points:
+                return "\n".join(f"{idx + 1}. {point}" for idx, point in enumerate(points))
+
+        chunks = [chunk.strip() for chunk in re.split(r"(?<=[.!?])\s+|\n+", stripped) if chunk.strip()]
+        if len(chunks) <= 1:
+            return f"1. {stripped}"
+
+        return "\n".join(f"{idx + 1}. {chunk}" for idx, chunk in enumerate(chunks))
+
     def answer(self, query: str) -> dict:
         if self._is_small_talk(query):
             return {"answer": self._small_talk_response(query), "sources": []}
@@ -75,7 +95,10 @@ class QAService:
                     "content": (
                         "Answer only from the provided context. "
                         "If the context is insufficient, say you do not know. "
-                        "Always include citation indexes like [1], [2]."
+                        "Always include citation indexes like [1], [2]. "
+                        "Format every non-small-talk answer as a numbered list (1., 2., 3.). "
+                        "Keep each point concise and factual. "
+                        "For list-style questions, return one idea per point with relevant citations on each point."
                     ),
                 },
                 {
@@ -86,6 +109,7 @@ class QAService:
         )
 
         answer_text = completion.choices[0].message.content or "No response generated."
+        answer_text = self._force_numbered_points(answer_text)
 
         sources = [
             {
