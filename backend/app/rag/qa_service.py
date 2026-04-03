@@ -11,52 +11,10 @@ class QAService:
         self.settings = settings
         self.client = OpenAI(api_key=settings.active_api_key, base_url=settings.active_base_url)
         self.retriever = Retriever(settings=settings)
+        self.corpus_score_threshold = 0.28
 
     def _normalize(self, query: str) -> str:
         return " ".join(query.strip().lower().split())
-
-    def _route_query(self, query: str) -> tuple[str, str]:
-        completion = self.client.chat.completions.create(
-            model=self.settings.llm_chat_model,
-            temperature=0,
-            max_tokens=220,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Classify the user's question into one of two routes: GENERAL or CORPUS. "
-                        "Use CORPUS only when the answer should come from the user's scraped/indexed content, "
-                        "uploaded pages, stored documents, sources, or corpus-specific facts. "
-                        "Use GENERAL for greetings, small talk, and normal questions that should be answered directly. "
-                        "Return exactly this format:\n"
-                        "ROUTE: GENERAL|CORPUS\n"
-                        "ANSWER: <only fill this for GENERAL in 1-3 concise sentences; leave empty for CORPUS>."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": query,
-                },
-            ],
-        )
-
-        raw = (completion.choices[0].message.content or "").strip()
-        route = "general"
-        answer = ""
-
-        for line in raw.splitlines():
-            stripped = line.strip()
-            upper = stripped.upper()
-            if upper.startswith("ROUTE:"):
-                value = stripped.split(":", 1)[1].strip().upper()
-                if "CORPUS" in value:
-                    route = "corpus"
-                else:
-                    route = "general"
-            elif upper.startswith("ANSWER:"):
-                answer = stripped.split(":", 1)[1].strip()
-
-        return route, answer
 
     def _general_answer(self, query: str) -> str:
         completion = self.client.chat.completions.create(
@@ -115,21 +73,24 @@ class QAService:
         return "\n".join(f"{idx + 1}. {chunk}" for idx, chunk in enumerate(chunks))
 
     def answer(self, query: str) -> dict:
-        route, routed_answer = self._route_query(query)
+        normalized_query = self._normalize(query)
+        short_query = len(normalized_query) <= 40 and len(normalized_query.split()) <= 7
 
-        if route == "general":
-            answer_text = routed_answer or self._general_answer(query)
+        # Fast conversational path: skip retrieval for short prompts to keep greetings/general quick.
+        if short_query:
+            answer_text = self._general_answer(query)
             if self._should_use_numbered_points(query):
                 answer_text = self._force_numbered_points(answer_text)
             return {"answer": answer_text, "sources": []}
 
         hits = self.retriever.retrieve(query)
 
-        if not hits:
-            return {
-                "answer": "I do not have enough indexed content yet. Run a scrape and index job first.",
-                "sources": [],
-            }
+        top_score = float(hits[0].get("score", 0.0)) if hits else 0.0
+        if not hits or top_score < self.corpus_score_threshold:
+            answer_text = self._general_answer(query)
+            if self._should_use_numbered_points(query):
+                answer_text = self._force_numbered_points(answer_text)
+            return {"answer": answer_text, "sources": []}
 
         context_blocks: list[str] = []
         for idx, item in enumerate(hits, start=1):
