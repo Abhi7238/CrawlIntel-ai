@@ -1,4 +1,5 @@
 import re
+from concurrent.futures import ThreadPoolExecutor
 
 from openai import OpenAI
 
@@ -99,7 +100,11 @@ class QAService:
         return "\n".join(f"{idx + 1}. {chunk}" for idx, chunk in enumerate(chunks))
 
     def answer(self, query: str) -> dict:
-        route = self._route_query(query)
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            route_future = executor.submit(self._route_query, query)
+            hits_future = executor.submit(self.retriever.retrieve, query)
+
+            route = route_future.result()
 
         if route == "general":
             answer_text = self._general_answer(query)
@@ -107,7 +112,7 @@ class QAService:
                 answer_text = self._force_numbered_points(answer_text)
             return {"answer": answer_text, "sources": []}
 
-        hits = self.retriever.retrieve(query)
+        hits = hits_future.result()
 
         if not hits:
             return {
