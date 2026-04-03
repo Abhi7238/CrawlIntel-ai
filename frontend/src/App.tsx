@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, useMemo, useState } from "react";
+import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
 
 type Source = {
   source_url: string;
@@ -53,9 +53,32 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState<ChatResponse | null>(null);
+  const [animatedAnswer, setAnimatedAnswer] = useState("");
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
-  const answerBlock = useMemo(() => (response ? parseAnswer(response.answer) : null), [response]);
+  const answerBlock = useMemo(() => parseAnswer(animatedAnswer), [animatedAnswer]);
+
+  useEffect(() => {
+    if (!response?.answer) {
+      setAnimatedAnswer("");
+      return;
+    }
+
+    const tokens = response.answer.split(/(\s+)/).filter((token) => token.length > 0);
+    let index = 0;
+    setAnimatedAnswer("");
+
+    const timer = window.setInterval(() => {
+      index += 1;
+      setAnimatedAnswer(tokens.slice(0, index).join(""));
+
+      if (index >= tokens.length) {
+        window.clearInterval(timer);
+      }
+    }, 18);
+
+    return () => window.clearInterval(timer);
+  }, [response]);
 
   const canAsk = useMemo(() => query.trim().length > 1 && !loading, [query, loading]);
 
@@ -181,7 +204,7 @@ export default function App() {
                   ))}
                 </ol>
               ) : (
-                <p className="answer-text">{answerBlock?.kind === "text" ? answerBlock.text : response.answer}</p>
+                <p className="answer-text">{answerBlock?.kind === "text" ? answerBlock.text : animatedAnswer}</p>
               )}
 
               <h3>Sources</h3>
@@ -237,7 +260,7 @@ export default function App() {
                     ))}
                   </ol>
                 ) : (
-                  <p className="answer-text">{answerBlock?.kind === "text" ? answerBlock.text : response.answer}</p>
+                  <p className="answer-text">{answerBlock?.kind === "text" ? answerBlock.text : animatedAnswer}</p>
                 )}
 
                 <h3>Sources</h3>
