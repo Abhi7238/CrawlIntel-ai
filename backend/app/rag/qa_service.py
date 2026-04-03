@@ -184,7 +184,9 @@ class QAService:
                         "If the context is insufficient, say you do not know. "
                         "Do not include citation indexes in the answer text. "
                         "Default to a concise paragraph unless the user asks for a list, steps, points, or comparison. "
-                        "For list-style questions, return numbered points (1., 2., 3.) with concise factual items."
+                        "For list-style questions, return numbered points (1., 2., 3.) with concise factual items. "
+                        "If you feel the response needs to be in points then give in points. "
+                        "Answer back in emojis if question is asked in emojis."
                     ),
                 },
                 {
