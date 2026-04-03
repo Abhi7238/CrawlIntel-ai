@@ -67,10 +67,16 @@ class Retriever:
         retrieval_start = time.perf_counter()
         load_start = time.perf_counter()
         rows = self._load_rows()
+        row_count = len(rows)
         load_rows_ms = (time.perf_counter() - load_start) * 1000
 
         if not rows:
-            return [], {"load_rows_ms": round(load_rows_ms, 2), "retrieval_ms": round((time.perf_counter() - retrieval_start) * 1000, 2)}
+            return [], {
+                "row_count": 0,
+                "shape_mismatch_count": 0,
+                "load_rows_ms": round(load_rows_ms, 2),
+                "retrieval_ms": round((time.perf_counter() - retrieval_start) * 1000, 2),
+            }
 
         embed_start = time.perf_counter()
         query_embedding = np.array(self._embed_query(query), dtype="float32")
@@ -85,11 +91,13 @@ class Retriever:
 
         score_start = time.perf_counter()
         scored: list[dict] = []
+        shape_mismatch_count = 0
         for row in rows:
             embedding = row.get("embedding")
             if embedding is None:
                 continue
             if embedding.shape[0] != query_embedding.shape[0]:
+                shape_mismatch_count += 1
                 continue
 
             vector_norm = float(row.get("vector_norm", 0.0))
@@ -112,6 +120,8 @@ class Retriever:
         if not scored:
             retrieval_ms = (time.perf_counter() - retrieval_start) * 1000
             return [], {
+                "row_count": row_count,
+                "shape_mismatch_count": shape_mismatch_count,
                 "load_rows_ms": round(load_rows_ms, 2),
                 "embed_query_ms": round(embed_query_ms, 2),
                 "score_ms": round(score_ms, 2),
@@ -121,6 +131,8 @@ class Retriever:
         top_hits = scored[: self.settings.top_k]
         retrieval_ms = (time.perf_counter() - retrieval_start) * 1000
         return top_hits, {
+            "row_count": row_count,
+            "shape_mismatch_count": shape_mismatch_count,
             "load_rows_ms": round(load_rows_ms, 2),
             "embed_query_ms": round(embed_query_ms, 2),
             "score_ms": round(score_ms, 2),

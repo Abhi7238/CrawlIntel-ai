@@ -131,7 +131,23 @@ class QAService:
         hits, retrieval_timings = self.retriever.retrieve_with_timings(query)
 
         top_score = float(hits[0].get("score", 0.0)) if hits else 0.0
-        if not hits or top_score < self.corpus_score_threshold:
+        shape_mismatch_count = int(retrieval_timings.get("shape_mismatch_count", 0))
+        row_count = int(retrieval_timings.get("row_count", 0))
+
+        if not hits and row_count > 0 and shape_mismatch_count >= row_count:
+            total_ms = (time.perf_counter() - total_start) * 1000
+            return {
+                "answer": "Your indexed embeddings are incompatible with the current embedding model. Run scrape/reindex after changing provider or embedding model.",
+                "sources": [],
+                "timings": {
+                    "total_ms": round(total_ms, 2),
+                    "retrieval_ms": float(retrieval_timings.get("retrieval_ms", 0)),
+                    "llm_ms": 0,
+                    "llm_answer_ms": 0,
+                },
+            }
+
+        if not hits or top_score <= 0:
             total_ms = (time.perf_counter() - total_start) * 1000
             return {
                 "answer": "I can answer only from your indexed corpus. Please ask a question related to your scraped content.",
