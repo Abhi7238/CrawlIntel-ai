@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: ai-bot
+    runtime: docker
+    dockerfilePath: ./Dockerfile
+    plan: free
+    autoDeploy: true
+    healthCheckPath: /health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LLM_PROVIDER
+        value: nvidia
+      - key: LLM_BASE_URL
+        value: https://integrate.api.nvidia.com/v1
+      - key: LLM_CHAT_MODEL
+        value: meta/llama-3.1-70b-instruct
+      - key: LLM_EMBEDDING_MODEL
+        value: nvidia/nv-embed-v1
+      - key: TOP_K
+        value: "5"
+      - key: CHUNK_SIZE
+        value: "900"
+      - key: CHUNK_OVERLAP
+        value: "150"
+      - key: DATABASE_URL
+        sync: false
+      - key: APIFY_API_TOKEN
+        sync: false
+      - key: NVIDIA_API_KEY
+        sync: false

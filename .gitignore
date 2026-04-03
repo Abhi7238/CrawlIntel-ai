@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# Backend local state
+backend/.env
+backend/data/*.db
+backend/data/index/*.faiss
+backend/data/index/*.jsonl
+backend/data/raw_docs.jsonl
+
+# Node
+frontend/node_modules/
+frontend/dist/
+*.tsbuildinfo
+
+# OS
+.DS_Store
+Thumbs.db
