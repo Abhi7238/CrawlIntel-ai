@@ -1,4 +1,5 @@
 import numpy as np
+import time
 from openai import OpenAI
 
 from app.core.config import Settings
@@ -10,6 +11,44 @@ class Retriever:
     def __init__(self, settings: Settings) -> None:
         self.settings = settings
         self.client = OpenAI(api_key=settings.active_api_key, base_url=settings.active_base_url)
+        self._cache_ttl_seconds = 45.0
+        self._cached_rows: list[dict] = []
+        self._cache_expires_at = 0.0
+
+    def _load_rows(self) -> list[dict]:
+        now = time.time()
+        if self._cached_rows and now < self._cache_expires_at:
+            return self._cached_rows
+
+        with SessionLocal() as db:
+            raw_rows = list_chunk_embeddings(db)
+
+        cached_rows: list[dict] = []
+        for row in raw_rows:
+            embedding = np.array(row.get("embedding", []), dtype="float32")
+            if embedding.size == 0:
+                continue
+
+            vector_norm = float(row.get("vector_norm", 0.0))
+            if vector_norm == 0:
+                vector_norm = float(np.linalg.norm(embedding))
+            if vector_norm == 0:
+                continue
+
+            cached_rows.append(
+                {
+                    "chunk_id": row.get("chunk_id", ""),
+                    "source_url": row.get("source_url", ""),
+                    "title": row.get("title", "Untitled"),
+                    "text": row.get("text", ""),
+                    "embedding": embedding,
+                    "vector_norm": vector_norm,
+                }
+            )
+
+        self._cached_rows = cached_rows
+        self._cache_expires_at = now + self._cache_ttl_seconds
+        return self._cached_rows
 
     def _embed_query(self, query: str) -> list[float]:
         request_kwargs = {
@@ -23,8 +62,7 @@ class Retriever:
         return response.data[0].embedding
 
     def retrieve(self, query: str) -> list[dict]:
-        with SessionLocal() as db:
-            rows = list_chunk_embeddings(db)
+        rows = self._load_rows()
 
         if not rows:
             return []
@@ -36,15 +74,13 @@ class Retriever:
 
         scored: list[dict] = []
         for row in rows:
-            embedding = np.array(row.get("embedding", []), dtype="float32")
-            if embedding.size == 0:
+            embedding = row.get("embedding")
+            if embedding is None:
                 continue
             if embedding.shape[0] != query_embedding.shape[0]:
                 continue
 
             vector_norm = float(row.get("vector_norm", 0.0))
-            if vector_norm == 0:
-                vector_norm = float(np.linalg.norm(embedding))
             if vector_norm == 0:
                 continue
 
