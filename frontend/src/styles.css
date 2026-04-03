@@ -183,8 +183,17 @@ textarea {
   font-weight: 600;
 }
 
-.result p {
+.answer-text {
   white-space: pre-line;
+}
+
+.answer-list {
+  margin: 0.25rem 0 0;
+  padding-left: 1.35rem;
+}
+
+.answer-list li {
+  margin-bottom: 0.45rem;
 }
 
 .result span {

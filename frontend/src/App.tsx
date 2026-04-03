@@ -11,6 +11,10 @@ type ChatResponse = {
   sources: Source[];
 };
 
+type AnswerBlock =
+  | { kind: "list"; items: string[] }
+  | { kind: "text"; text: string };
+
 const THINKING_QUOTES = [
   "\"Brewing an answer from your sources...\"",
   "\"Connecting the dots across your corpus...\"",
@@ -19,6 +23,31 @@ const THINKING_QUOTES = [
 
 const API_BASE = import.meta.env.VITE_API_BASE ?? (window.location.hostname === "localhost" ? "http://localhost:8000" : "");
 
+function parseAnswer(answer: string): AnswerBlock {
+  const normalized = answer.replace(/\r\n/g, "\n").trim();
+  const listMatches = normalized.match(/(^|\n)\s*\d+[.)]\s+.+?(?=(?:\n\s*\d+[.)]\s+)|$)/gms);
+
+  if (listMatches && listMatches.length >= 2) {
+    const items = listMatches
+      .map((item) => item.replace(/^\s*\d+[.)]\s+/, "").trim())
+      .filter(Boolean);
+
+    if (items.length >= 2) {
+      return { kind: "list", items };
+    }
+  }
+
+  const inlineMatches = normalized.match(/\b\d+[.)]\s+[^\d]+?(?=(?:\s+\d+[.)]\s+)|$)/gms);
+  if (inlineMatches && inlineMatches.length >= 2) {
+    const items = inlineMatches.map((item) => item.replace(/^\d+[.)]\s+/, "").trim()).filter(Boolean);
+    if (items.length >= 2) {
+      return { kind: "list", items };
+    }
+  }
+
+  return { kind: "text", text: normalized };
+}
+
 export default function App() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -26,6 +55,7 @@ export default function App() {
   const [response, setResponse] = useState<ChatResponse | null>(null);
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
+  const answerBlock = useMemo(() => (response ? parseAnswer(response.answer) : null), [response]);
 
   const canAsk = useMemo(() => query.trim().length > 1 && !loading, [query, loading]);
 
@@ -144,7 +174,15 @@ export default function App() {
           {response ? (
             <div className="result">
               <h2>Answer</h2>
-              <p>{response.answer}</p>
+              {answerBlock?.kind === "list" ? (
+                <ol className="answer-list">
+                  {answerBlock.items.map((item, index) => (
+                    <li key={`${index}-${item.slice(0, 16)}`}>{item}</li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="answer-text">{answerBlock?.kind === "text" ? answerBlock.text : response.answer}</p>
+              )}
 
               <h3>Sources</h3>
               <ul>
@@ -192,7 +230,15 @@ export default function App() {
             {response ? (
               <div className="result">
                 <h2>Answer</h2>
-                <p>{response.answer}</p>
+                {answerBlock?.kind === "list" ? (
+                  <ol className="answer-list">
+                    {answerBlock.items.map((item, index) => (
+                      <li key={`${index}-${item.slice(0, 16)}`}>{item}</li>
+                    ))}
+                  </ol>
+                ) : (
+                  <p className="answer-text">{answerBlock?.kind === "text" ? answerBlock.text : response.answer}</p>
+                )}
 
                 <h3>Sources</h3>
                 <ul>
