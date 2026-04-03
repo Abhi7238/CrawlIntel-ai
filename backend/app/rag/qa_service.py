@@ -182,9 +182,9 @@ class QAService:
                     "content": (
                         "Answer only from the provided context. "
                         "If the context is insufficient, say you do not know. "
-                        "Always include citation indexes like [1], [2]. "
+                        "Do not include citation indexes in the answer text. "
                         "Default to a concise paragraph unless the user asks for a list, steps, points, or comparison. "
-                        "For list-style questions, return numbered points (1., 2., 3.) with concise factual items and citations."
+                        "For list-style questions, return numbered points (1., 2., 3.) with concise factual items."
                     ),
                 },
                 {
