@@ -12,7 +12,7 @@ class QAService:
         self.settings = settings
         self.client = OpenAI(api_key=settings.active_api_key, base_url=settings.active_base_url)
         self.retriever = Retriever(settings=settings)
-        self.corpus_score_threshold = 0.28
+        self.corpus_score_threshold = 0.12
 
     def _normalize(self, query: str) -> str:
         return " ".join(query.strip().lower().split())
@@ -139,6 +139,7 @@ class QAService:
                 "timings": {
                     "total_ms": round(total_ms, 2),
                     "retrieval_ms": float(retrieval_timings.get("retrieval_ms", 0)),
+                    "top_score": round(top_score, 4),
                     "llm_ms": 0,
                     "llm_answer_ms": 0,
                 },
@@ -198,6 +199,7 @@ class QAService:
             "timings": {
                 "total_ms": round(total_ms, 2),
                 "retrieval_ms": float(retrieval_timings.get("retrieval_ms", 0)),
+                "top_score": round(top_score, 4),
                 "llm_ms": round(llm_ms, 2),
                 "llm_answer_ms": round(llm_ms, 2),
             },
