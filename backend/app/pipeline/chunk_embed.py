@@ -4,8 +4,7 @@ from openai import OpenAI
 
 from app.core.config import Settings
 from app.db.database import SessionLocal
-from app.db.repository import list_documents, save_documents
-from app.rag.faiss_store import FaissStore
+from app.db.repository import list_documents, replace_chunk_embeddings, save_documents
 
 
 def _hash_text(text: str) -> str:
@@ -100,10 +99,7 @@ def rebuild_faiss_index(settings: Settings) -> dict:
 
     vectors = embed_chunks(chunks, settings)
 
-    store = FaissStore(
-        index_path=settings.index_dir / "index.faiss",
-        metadata_path=settings.index_dir / "metadata.jsonl",
-    )
-    indexed = store.save(embeddings=vectors, metadata=chunks)
+    with SessionLocal() as db:
+        indexed = replace_chunk_embeddings(db, chunks, vectors)
 
     return {"documents": len(documents), "chunks": indexed}

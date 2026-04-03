@@ -19,6 +19,6 @@ def chat(request: ChatRequest) -> ChatResponse:
         result = service.answer(request.query)
         return ChatResponse(**result)
     except FileNotFoundError:
-        raise HTTPException(status_code=400, detail="No FAISS index found. Run scrape/reindex first.")
+        raise HTTPException(status_code=400, detail="No indexed embeddings found. Run scrape/reindex first.")
     except Exception as exc:
         raise HTTPException(status_code=500, detail=f"Chat request failed: {exc}")

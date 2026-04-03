@@ -2,7 +2,7 @@
 
 This project implements:
 
-Apify -> scraped content -> database -> embeddings -> FAISS retrieval -> FastAPI backend -> React chat UI.
+Apify -> scraped content -> database -> embeddings -> database-backed retrieval -> FastAPI backend -> React chat UI.
 
 ## Project layout
 

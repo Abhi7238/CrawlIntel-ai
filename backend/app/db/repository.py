@@ -2,10 +2,11 @@ import hashlib
 from datetime import datetime
 from typing import Optional
 
-from sqlalchemy import desc, select
+import numpy as np
+from sqlalchemy import delete, desc, select
 from sqlalchemy.orm import Session
 
-from app.db.models import ScrapeJob, ScrapedDocument
+from app.db.models import ChunkEmbedding, ScrapeJob, ScrapedDocument
 
 
 def _hash_document(source_url: str, text: str) -> str:
@@ -84,3 +85,46 @@ def upsert_job(
 
 def get_latest_job(db: Session) -> Optional[ScrapeJob]:
     return db.scalars(select(ScrapeJob).order_by(desc(ScrapeJob.updated_at), desc(ScrapeJob.created_at))).first()
+
+
+def replace_chunk_embeddings(db: Session, chunks: list[dict], vectors: list[list[float]]) -> int:
+    if len(chunks) != len(vectors):
+        raise ValueError("Chunk and embedding counts do not match")
+
+    db.execute(delete(ChunkEmbedding))
+
+    now = datetime.utcnow()
+    for chunk, vector in zip(chunks, vectors):
+        arr = np.array(vector, dtype="float32")
+        norm = float(np.linalg.norm(arr))
+        db.add(
+            ChunkEmbedding(
+                chunk_id=str(chunk.get("chunk_id", "")),
+                source_url=str(chunk.get("source_url", "")),
+                title=str(chunk.get("title", "Untitled")),
+                text=str(chunk.get("text", "")),
+                embedding=[float(v) for v in arr.tolist()],
+                vector_norm=norm,
+                updated_at=now,
+            )
+        )
+
+    db.commit()
+    return len(chunks)
+
+
+def list_chunk_embeddings(db: Session) -> list[dict]:
+    rows = db.scalars(select(ChunkEmbedding)).all()
+    output: list[dict] = []
+    for row in rows:
+        output.append(
+            {
+                "chunk_id": row.chunk_id,
+                "source_url": row.source_url,
+                "title": row.title,
+                "text": row.text,
+                "embedding": row.embedding or [],
+                "vector_norm": float(row.vector_norm or 0.0),
+            }
+        )
+    return output
