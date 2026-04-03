@@ -11,9 +11,17 @@ class SourceItem(BaseModel):
     score: float
 
 
+class ChatTimings(BaseModel):
+    total_ms: float = 0
+    retrieval_ms: float = 0
+    llm_ms: float = 0
+    llm_answer_ms: float = 0
+
+
 class ChatResponse(BaseModel):
     answer: str
     sources: list[SourceItem]
+    timings: ChatTimings | None = None
 
 
 class ScrapeRequest(BaseModel):

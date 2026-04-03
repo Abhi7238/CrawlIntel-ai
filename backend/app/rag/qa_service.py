@@ -1,4 +1,5 @@
 import re
+import time
 
 from openai import OpenAI
 
@@ -109,19 +110,38 @@ class QAService:
         return "\n".join(f"{idx + 1}. {chunk}" for idx, chunk in enumerate(chunks))
 
     def answer(self, query: str) -> dict:
+        total_start = time.perf_counter()
+
         if self._is_special_non_corpus_message(query):
+            llm_start = time.perf_counter()
+            answer_text = self._special_non_corpus_answer(query)
+            llm_ms = (time.perf_counter() - llm_start) * 1000
+            total_ms = (time.perf_counter() - total_start) * 1000
             return {
-                "answer": self._special_non_corpus_answer(query),
+                "answer": answer_text,
                 "sources": [],
+                "timings": {
+                    "total_ms": round(total_ms, 2),
+                    "retrieval_ms": 0,
+                    "llm_ms": round(llm_ms, 2),
+                    "llm_answer_ms": round(llm_ms, 2),
+                },
             }
 
-        hits = self.retriever.retrieve(query)
+        hits, retrieval_timings = self.retriever.retrieve_with_timings(query)
 
         top_score = float(hits[0].get("score", 0.0)) if hits else 0.0
         if not hits or top_score < self.corpus_score_threshold:
+            total_ms = (time.perf_counter() - total_start) * 1000
             return {
                 "answer": "I can answer only from your indexed corpus. Please ask a question related to your scraped content.",
                 "sources": [],
+                "timings": {
+                    "total_ms": round(total_ms, 2),
+                    "retrieval_ms": float(retrieval_timings.get("retrieval_ms", 0)),
+                    "llm_ms": 0,
+                    "llm_answer_ms": 0,
+                },
             }
 
         context_blocks: list[str] = []
@@ -135,6 +155,7 @@ class QAService:
 
         context = "\n\n".join(context_blocks)
 
+        llm_start = time.perf_counter()
         completion = self.client.chat.completions.create(
             model=self.settings.llm_chat_model,
             temperature=0,
@@ -155,6 +176,7 @@ class QAService:
                 },
             ],
         )
+        llm_ms = (time.perf_counter() - llm_start) * 1000
 
         answer_text = completion.choices[0].message.content or "No response generated."
         if self._should_use_numbered_points(query):
@@ -169,4 +191,14 @@ class QAService:
             for item in hits
         ]
 
-        return {"answer": answer_text, "sources": sources}
+        total_ms = (time.perf_counter() - total_start) * 1000
+        return {
+            "answer": answer_text,
+            "sources": sources,
+            "timings": {
+                "total_ms": round(total_ms, 2),
+                "retrieval_ms": float(retrieval_timings.get("retrieval_ms", 0)),
+                "llm_ms": round(llm_ms, 2),
+                "llm_answer_ms": round(llm_ms, 2),
+            },
+        }

@@ -1,5 +1,3 @@
-import json
-import re
 import numpy as np
 import time
 from openai import OpenAI
@@ -63,78 +61,29 @@ class Retriever:
         response = self.client.embeddings.create(**request_kwargs)
         return response.data[0].embedding
 
-    def _llm_select_chunk_ids(self, query: str, candidates: list[dict]) -> list[str]:
-        candidate_blocks: list[str] = []
-        for item in candidates:
-            excerpt = str(item.get("text", "")).replace("\n", " ").strip()
-            if len(excerpt) > 260:
-                excerpt = excerpt[:260] + "..."
-            candidate_blocks.append(
-                "\n".join(
-                    [
-                        f"chunk_id: {item.get('chunk_id', '')}",
-                        f"title: {item.get('title', 'Untitled')}",
-                        f"url: {item.get('source_url', '')}",
-                        f"excerpt: {excerpt}",
-                    ]
-                )
-            )
 
-        completion = self.client.chat.completions.create(
-            model=self.settings.llm_chat_model,
-            temperature=0,
-            max_tokens=220,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        "Select the most relevant chunk_ids for answering the user question. "
-                        "Return strict JSON only in this shape: {\"chunk_ids\":[\"id1\",\"id2\"]}. "
-                        "Choose at most the requested count and prioritize factual relevance."
-                    ),
-                },
-                {
-                    "role": "user",
-                    "content": (
-                        f"Question: {query}\n"
-                        f"Max chunk_ids: {self.settings.top_k}\n\n"
-                        "Candidates:\n"
-                        + "\n\n".join(candidate_blocks)
-                    ),
-                },
-            ],
-        )
 
-        raw = (completion.choices[0].message.content or "").strip()
-        if not raw:
-            return []
-
-        try:
-            parsed = json.loads(raw)
-            ids = parsed.get("chunk_ids", [])
-            return [str(item) for item in ids if str(item).strip()]
-        except Exception:
-            match = re.search(r"\{.*\}", raw, flags=re.DOTALL)
-            if not match:
-                return []
-            try:
-                parsed = json.loads(match.group(0))
-                ids = parsed.get("chunk_ids", [])
-                return [str(item) for item in ids if str(item).strip()]
-            except Exception:
-                return []
-
-    def retrieve(self, query: str) -> list[dict]:
+    def retrieve_with_timings(self, query: str) -> tuple[list[dict], dict[str, float]]:
+        retrieval_start = time.perf_counter()
+        load_start = time.perf_counter()
         rows = self._load_rows()
+        load_rows_ms = (time.perf_counter() - load_start) * 1000
 
         if not rows:
-            return []
+            return [], {"load_rows_ms": round(load_rows_ms, 2), "retrieval_ms": round((time.perf_counter() - retrieval_start) * 1000, 2)}
 
+        embed_start = time.perf_counter()
         query_embedding = np.array(self._embed_query(query), dtype="float32")
+        embed_query_ms = (time.perf_counter() - embed_start) * 1000
         query_norm = float(np.linalg.norm(query_embedding))
         if query_norm == 0:
-            return []
+            return [], {
+                "load_rows_ms": round(load_rows_ms, 2),
+                "embed_query_ms": round(embed_query_ms, 2),
+                "retrieval_ms": round((time.perf_counter() - retrieval_start) * 1000, 2),
+            }
 
+        score_start = time.perf_counter()
         scored: list[dict] = []
         for row in rows:
             embedding = row.get("embedding")
@@ -157,34 +106,27 @@ class Retriever:
             }
             scored.append(item)
 
+        score_ms = (time.perf_counter() - score_start) * 1000
         scored.sort(key=lambda item: item["score"], reverse=True)
 
         if not scored:
-            return []
+            retrieval_ms = (time.perf_counter() - retrieval_start) * 1000
+            return [], {
+                "load_rows_ms": round(load_rows_ms, 2),
+                "embed_query_ms": round(embed_query_ms, 2),
+                "score_ms": round(score_ms, 2),
+                "retrieval_ms": round(retrieval_ms, 2),
+            }
 
-        candidate_count = min(len(scored), max(self.settings.top_k * 4, 10))
-        candidates = scored[:candidate_count]
-        selected_ids = self._llm_select_chunk_ids(query, candidates)
+        top_hits = scored[: self.settings.top_k]
+        retrieval_ms = (time.perf_counter() - retrieval_start) * 1000
+        return top_hits, {
+            "load_rows_ms": round(load_rows_ms, 2),
+            "embed_query_ms": round(embed_query_ms, 2),
+            "score_ms": round(score_ms, 2),
+            "retrieval_ms": round(retrieval_ms, 2),
+        }
 
-        if not selected_ids:
-            return candidates[: self.settings.top_k]
-
-        by_id = {item.get("chunk_id", ""): item for item in candidates}
-        selected: list[dict] = []
-        seen: set[str] = set()
-        for chunk_id in selected_ids:
-            if chunk_id in by_id and chunk_id not in seen:
-                selected.append(by_id[chunk_id])
-                seen.add(chunk_id)
-
-        if len(selected) < self.settings.top_k:
-            for item in candidates:
-                chunk_id = str(item.get("chunk_id", ""))
-                if chunk_id in seen:
-                    continue
-                selected.append(item)
-                seen.add(chunk_id)
-                if len(selected) >= self.settings.top_k:
-                    break
-
-        return selected[: self.settings.top_k]
+    def retrieve(self, query: str) -> list[dict]:
+        hits, _ = self.retrieve_with_timings(query)
+        return hits
