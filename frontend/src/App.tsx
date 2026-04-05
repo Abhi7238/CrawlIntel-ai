@@ -250,12 +250,12 @@ export default function App() {
           <p className="eyebrow">CrawlIntel AI</p>
           <h1>CrawlIntel AI Assistant</h1>
           <p>
-            Query your indexed web knowledge base with confidence. CrawlIntel AI generates responses from retrieved source chunks and includes clear citations for traceability.
+        CrawlIntel AI delivers accurate insights by analyzing trusted sources and presenting clear, reliable responses. Each answer includes references, ensuring transparency and credibility.
           </p>
         </section>
 
         <section className="panel chat">
-          <h2 className="ask-heading">Ask Something</h2>
+          <h2 className="ask-heading">Ask CrawlIntel !</h2>
           <form onSubmit={onAsk} className="ask-form">
             <label htmlFor="question-main" className="sr-only">Ask something</label>
             <div className="composer">
