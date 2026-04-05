@@ -227,7 +227,8 @@ export default function App() {
             <label htmlFor="question-main">Ask something</label>
             <textarea
               id="question-main"
-              rows={4}
+              rows={2}
+              className="query-input"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onQueryKeyDown}
@@ -287,7 +288,8 @@ export default function App() {
               <label htmlFor="question-widget">Ask something</label>
               <textarea
                 id="question-widget"
-                rows={4}
+                rows={2}
+                className="query-input"
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
                 onKeyDown={onQueryKeyDown}
