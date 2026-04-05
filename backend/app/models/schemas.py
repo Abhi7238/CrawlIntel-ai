@@ -21,6 +21,7 @@ class ChatTimings(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     sources: list[SourceItem]
+    ui_title: str | None = None
     timings: ChatTimings | None = None
 
 

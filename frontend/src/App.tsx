@@ -9,6 +9,7 @@ type Source = {
 type ChatResponse = {
   answer: string;
   sources: Source[];
+  ui_title?: string | null;
 };
 
 type AnswerBlock =
@@ -72,11 +73,37 @@ function displaySourceTitle(source: Source): string {
   }
 }
 
+function isGreetingQuery(query: string): boolean {
+  const normalized = query.trim().toLowerCase().replace(/\s+/g, " ");
+  return /^(hi+|hello+|hey+|heyy+|yo+|hola+|welcome+|good\s*(morning|afternoon|evening|night)|how are you|how are u|what'?s up|whats up)$/.test(normalized);
+}
+
+function getResponseHeading(response: ChatResponse | null, submittedQuery: string): string {
+  if (!response) {
+    return "";
+  }
+
+  if (response.ui_title && response.ui_title.trim().length > 0) {
+    return response.ui_title.trim();
+  }
+
+  if (isGreetingQuery(submittedQuery)) {
+    return "Welcome";
+  }
+
+  if (response.sources.length === 0) {
+    return "CrawlIntel says";
+  }
+
+  return "Here's what I found";
+}
+
 export default function App() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [response, setResponse] = useState<ChatResponse | null>(null);
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [animatedAnswer, setAnimatedAnswer] = useState("");
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
@@ -113,6 +140,7 @@ export default function App() {
     }
 
     setLoading(true);
+    setSubmittedQuery(query.trim());
     setQuoteIndex((current) => (current + 1) % THINKING_QUOTES.length);
     setError("");
 
@@ -156,6 +184,7 @@ export default function App() {
     }
 
     setLoading(true);
+    setSubmittedQuery(query.trim());
     setQuoteIndex((current) => (current + 1) % THINKING_QUOTES.length);
     setError("");
 
@@ -220,7 +249,7 @@ export default function App() {
 
           {response ? (
             <div className="result">
-              <h2>Here's what I found</h2>
+              <h2>{getResponseHeading(response, submittedQuery)}</h2>
               {answerBlock?.kind === "list" ? (
                 <ol className="answer-list">
                   {answerBlock.items.map((item, index) => (
@@ -252,7 +281,6 @@ export default function App() {
           <section className="panel chat-drawer">
             <div className="drawer-brand" aria-label="CrawlIntel branding">
               <p className="drawer-eyebrow">CrawlIntel AI</p>
-              <h2>Ask something</h2>
             </div>
 
             <form onSubmit={onAsk} className="ask-form">
@@ -281,7 +309,7 @@ export default function App() {
 
             {response ? (
               <div className="result">
-                <h2>Here's what I found</h2>
+                <h2>{getResponseHeading(response, submittedQuery)}</h2>
                 {answerBlock?.kind === "list" ? (
                   <ol className="answer-list">
                     {answerBlock.items.map((item, index) => (

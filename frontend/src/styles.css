@@ -165,11 +165,6 @@ textarea::placeholder {
   background: rgba(126, 224, 255, 0.08);
 }
 
-.drawer-brand h2 {
-  margin: 0.15rem 0 0;
-  font-size: 1rem;
-}
-
 .drawer-eyebrow {
   margin: 0;
   color: var(--accent);
