@@ -157,6 +157,28 @@ textarea::placeholder {
   animation: fade-slide 0.2s ease;
 }
 
+.drawer-brand {
+  margin-bottom: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(126, 224, 255, 0.2);
+  background: rgba(126, 224, 255, 0.08);
+}
+
+.drawer-brand h2 {
+  margin: 0.15rem 0 0;
+  font-size: 1rem;
+}
+
+.drawer-eyebrow {
+  margin: 0;
+  color: var(--accent);
+  font-family: "IBM Plex Mono", monospace;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  font-size: 0.72rem;
+}
+
 .chat-drawer .ask-form,
 .chat-drawer .thinking-panel,
 .chat-drawer .error {

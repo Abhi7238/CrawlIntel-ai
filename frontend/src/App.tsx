@@ -195,7 +195,7 @@ export default function App() {
 
         <section className="panel chat">
           <form onSubmit={onAsk} className="ask-form">
-            <label htmlFor="question-main">Question</label>
+            <label htmlFor="question-main">Ask something</label>
             <textarea
               id="question-main"
               rows={4}
@@ -220,7 +220,7 @@ export default function App() {
 
           {response ? (
             <div className="result">
-              <h2>Answer</h2>
+              <h2>Here's what I found</h2>
               {answerBlock?.kind === "list" ? (
                 <ol className="answer-list">
                   {answerBlock.items.map((item, index) => (
@@ -250,8 +250,13 @@ export default function App() {
       <div className="chat-widget">
         {isLauncherOpen ? (
           <section className="panel chat-drawer">
+            <div className="drawer-brand" aria-label="CrawlIntel branding">
+              <p className="drawer-eyebrow">CrawlIntel AI</p>
+              <h2>Ask something</h2>
+            </div>
+
             <form onSubmit={onAsk} className="ask-form">
-              <label htmlFor="question-widget">Question</label>
+              <label htmlFor="question-widget">Ask something</label>
               <textarea
                 id="question-widget"
                 rows={4}
@@ -276,7 +281,7 @@ export default function App() {
 
             {response ? (
               <div className="result">
-                <h2>Answer</h2>
+                <h2>Here's what I found</h2>
                 {answerBlock?.kind === "list" ? (
                   <ol className="answer-list">
                     {answerBlock.items.map((item, index) => (
