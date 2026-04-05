@@ -186,6 +186,27 @@ textarea::placeholder {
   max-height: 100%;
   overflow-y: auto;
   overscroll-behavior: contain;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(126, 224, 255, 0.55) rgba(255, 255, 255, 0.08);
+}
+
+.chat-drawer .result::-webkit-scrollbar {
+  width: 10px;
+}
+
+.chat-drawer .result::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 999px;
+}
+
+.chat-drawer .result::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(126, 224, 255, 0.78), rgba(140, 140, 255, 0.78));
+  border-radius: 999px;
+  border: 2px solid rgba(11, 14, 20, 0.82);
+}
+
+.chat-drawer .result::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(126, 224, 255, 0.95), rgba(140, 140, 255, 0.95));
 }
 
 .chat-launcher {
