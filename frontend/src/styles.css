@@ -227,9 +227,15 @@ textarea::placeholder {
   padding: 0.2rem 0;
 }
 
+.drawer-brand-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
 .drawer-eyebrow {
-  margin: 0 0 0.25rem;
-  text-align: center;
+  margin: 0;
   color: var(--accent);
   font-family: "IBM Plex Mono", monospace;
   text-transform: uppercase;
@@ -237,8 +243,27 @@ textarea::placeholder {
   font-size: 0.72rem;
 }
 
+.drawer-close {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--ink);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.drawer-close:hover {
+  background: rgba(126, 224, 255, 0.16);
+  border-color: rgba(126, 224, 255, 0.38);
+}
+
 .drawer-heading {
-  margin: 0;
+  margin: 0.3rem 0 0;
 }
 
 .chat-drawer .ask-form,

@@ -317,7 +317,18 @@ export default function App() {
         {isLauncherOpen ? (
           <section className="panel chat-drawer">
             <div className="drawer-brand" aria-label="CrawlIntel branding">
-              <p className="drawer-eyebrow">CrawlIntel AI</p>
+              <div className="drawer-brand-top">
+                <p className="drawer-eyebrow">CrawlIntel AI</p>
+                <button
+                  type="button"
+                  className="drawer-close"
+                  onClick={() => setIsLauncherOpen(false)}
+                  aria-label="Close chat drawer"
+                  title="Close"
+                >
+                  x
+                </button>
+              </div>
               <h2 className="ask-heading drawer-heading">Ask Something</h2>
             </div>
 
