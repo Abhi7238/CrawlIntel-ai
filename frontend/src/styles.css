@@ -158,8 +158,11 @@ textarea::placeholder {
 }
 
 .chat-drawer .result {
+  flex: 1 1 auto;
   min-height: 0;
-  overflow: auto;
+  max-height: 100%;
+  overflow-y: auto;
+  overscroll-behavior: contain;
 }
 
 .chat-launcher {
@@ -276,5 +279,13 @@ textarea::placeholder {
     height: min(78dvh, 560px);
     max-height: min(78dvh, 560px);
     overflow: hidden;
+  }
+
+  .chat-drawer .result {
+    flex: 1 1 auto;
+    min-height: 0;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
