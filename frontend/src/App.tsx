@@ -1,4 +1,4 @@
-import { FormEvent, KeyboardEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, KeyboardEvent, useEffect, useMemo, useRef, useState } from "react";
 
 type Source = {
   source_url: string;
@@ -107,7 +107,26 @@ export default function App() {
   const [animatedAnswer, setAnimatedAnswer] = useState("");
   const [isLauncherOpen, setIsLauncherOpen] = useState(false);
   const [quoteIndex, setQuoteIndex] = useState(0);
+  const mainTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const widgetTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const answerBlock = useMemo(() => parseAnswer(animatedAnswer), [animatedAnswer]);
+
+  function autoResizeTextarea(element: HTMLTextAreaElement | null) {
+    if (!element) {
+      return;
+    }
+
+    const maxHeight = 220;
+    element.style.height = "auto";
+    const nextHeight = Math.min(element.scrollHeight, maxHeight);
+    element.style.height = `${nextHeight}px`;
+    element.style.overflowY = element.scrollHeight > maxHeight ? "auto" : "hidden";
+  }
+
+  function onQueryChange(event: ChangeEvent<HTMLTextAreaElement>) {
+    setQuery(event.target.value);
+    autoResizeTextarea(event.target);
+  }
 
   useEffect(() => {
     if (!response?.answer) {
@@ -130,6 +149,11 @@ export default function App() {
 
     return () => window.clearInterval(timer);
   }, [response]);
+
+  useEffect(() => {
+    autoResizeTextarea(mainTextareaRef.current);
+    autoResizeTextarea(widgetTextareaRef.current);
+  }, [query, isLauncherOpen]);
 
   const canAsk = useMemo(() => query.trim().length > 1 && !loading, [query, loading]);
 
@@ -229,8 +253,9 @@ export default function App() {
               id="question-main"
               rows={2}
               className="query-input"
+              ref={mainTextareaRef}
               value={query}
-              onChange={(event) => setQuery(event.target.value)}
+              onChange={onQueryChange}
               onKeyDown={onQueryKeyDown}
               placeholder="What does the documentation say about ..."
             />
@@ -290,8 +315,9 @@ export default function App() {
                 id="question-widget"
                 rows={2}
                 className="query-input"
+                ref={widgetTextareaRef}
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={onQueryChange}
                 onKeyDown={onQueryKeyDown}
                 placeholder="What does the documentation say about ..."
               />

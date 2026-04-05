@@ -79,10 +79,11 @@ textarea {
 
 .query-input {
   min-height: 52px;
-  max-height: 120px;
+  max-height: 220px;
   border-radius: 16px;
   padding: 0.68rem 0.82rem;
   line-height: 1.35;
+  overflow-y: hidden;
   transition: border-color 0.16s ease, box-shadow 0.16s ease, background-color 0.16s ease;
 }
 
