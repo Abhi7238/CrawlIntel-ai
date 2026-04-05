@@ -157,6 +157,12 @@ textarea::placeholder {
   animation: fade-slide 0.2s ease;
 }
 
+.chat-drawer .ask-form,
+.chat-drawer .thinking-panel,
+.chat-drawer .error {
+  flex: 0 0 auto;
+}
+
 .chat-drawer .result {
   flex: 1 1 auto;
   min-height: 0;
@@ -276,8 +282,8 @@ textarea::placeholder {
 
   .chat-drawer {
     width: calc(100vw - 1rem);
-    height: min(62dvh, 460px);
-    max-height: min(62dvh, 460px);
+    height: min(54dvh, 380px);
+    max-height: min(54dvh, 380px);
     overflow: hidden;
   }
 

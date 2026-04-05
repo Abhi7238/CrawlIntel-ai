@@ -56,6 +56,22 @@ function parseAnswer(answer: string): AnswerBlock {
   return { kind: "text", text: normalized };
 }
 
+function displaySourceTitle(source: Source): string {
+  const candidate = (source.title || "").trim();
+  if (candidate && candidate.toLowerCase() != "untitled") {
+    return candidate;
+  }
+
+  try {
+    const parsed = new URL(source.source_url);
+    const host = parsed.hostname.replace(/^www\./, "");
+    const path = parsed.pathname.split("/").filter(Boolean).slice(-1)[0] || "home";
+    return `${host} - ${decodeURIComponent(path).replace(/[-_]+/g, " ")}`;
+  } catch {
+    return source.source_url || "Source";
+  }
+}
+
 export default function App() {
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
@@ -220,7 +236,7 @@ export default function App() {
                 {response.sources.map((source, index) => (
                   <li key={`${source.source_url}-${index}`}>
                     <a href={source.source_url} target="_blank" rel="noreferrer">
-                      {source.title || source.source_url}
+                      {displaySourceTitle(source)}
                     </a>
                     <span>score: {source.score.toFixed(4)}</span>
                   </li>
@@ -276,7 +292,7 @@ export default function App() {
                   {response.sources.map((source, index) => (
                     <li key={`${source.source_url}-${index}`}>
                       <a href={source.source_url} target="_blank" rel="noreferrer">
-                        {source.title || source.source_url}
+                        {displaySourceTitle(source)}
                       </a>
                       <span>score: {source.score.toFixed(4)}</span>
                     </li>

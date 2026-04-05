@@ -1,10 +1,54 @@
 from datetime import datetime
 from typing import Any
+from urllib.parse import urlparse, unquote
 
 from apify_client import ApifyClient
 from bs4 import BeautifulSoup
 
 from app.core.config import Settings
+
+
+def _title_from_url(url: str) -> str:
+    if not url:
+        return "Source"
+
+    parsed = urlparse(url)
+    host = parsed.netloc.replace("www.", "")
+    segment = parsed.path.strip("/").split("/")[-1] if parsed.path else ""
+    readable_segment = unquote(segment).replace("-", " ").replace("_", " ").strip()
+
+    if readable_segment:
+        return f"{host} - {readable_segment}"
+    if host:
+        return host
+    return "Source"
+
+
+def _extract_title(item: dict[str, Any], url: str) -> str:
+    candidates = [
+        item.get("title"),
+        item.get("pageTitle"),
+        item.get("ogTitle"),
+    ]
+
+    metadata = item.get("metadata")
+    if isinstance(metadata, dict):
+        candidates.extend([metadata.get("title"), metadata.get("og:title")])
+
+    for candidate in candidates:
+        text = str(candidate or "").strip()
+        if text and text.lower() != "untitled":
+            return text
+
+    html = item.get("html")
+    if html:
+        soup = BeautifulSoup(str(html), "html.parser")
+        if soup.title and soup.title.string:
+            html_title = soup.title.string.strip()
+            if html_title and html_title.lower() != "untitled":
+                return html_title
+
+    return _title_from_url(url)
 
 
 def _extract_text(item: dict[str, Any]) -> str:
@@ -48,7 +92,7 @@ def scrape_urls(settings: Settings, urls: list[str]) -> list[dict[str, str]]:
             continue
 
         url = str(item.get("url") or item.get("loadedUrl") or "")
-        title = str(item.get("title") or "Untitled")
+        title = _extract_title(item, url)
 
         records.append(
             {
