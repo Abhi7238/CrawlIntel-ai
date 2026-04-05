@@ -6,7 +6,13 @@ from fastapi import APIRouter, BackgroundTasks, HTTPException
 from app.db.database import SessionLocal
 from app.db.repository import get_latest_job, upsert_job
 from app.core.config import get_settings
-from app.models.schemas import ScrapeRequest, ScrapeResponse, StatusResponse
+from app.models.schemas import (
+    ManualIngestRequest,
+    ManualIngestResponse,
+    ScrapeRequest,
+    ScrapeResponse,
+    StatusResponse,
+)
 from app.pipeline.chunk_embed import rebuild_faiss_index, save_raw_documents
 from app.pipeline.scrape_apify import scrape_urls
 
@@ -54,6 +60,37 @@ def scrape(request: ScrapeRequest, background_tasks: BackgroundTasks) -> ScrapeR
     background_tasks.add_task(_run_scrape_job, job_id, request.urls)
 
     return ScrapeResponse(job_id=job_id, status="queued")
+
+
+@router.post("/manual", response_model=ManualIngestResponse)
+def manual_ingest(request: ManualIngestRequest) -> ManualIngestResponse:
+    settings = get_settings()
+
+    documents = [item.model_dump() for item in request.documents]
+    saved = save_raw_documents(settings, documents)
+
+    indexed_chunks = 0
+    status = "completed"
+    message = f"Saved {saved} document(s)"
+
+    if request.reindex:
+        if not settings.active_api_key:
+            raise HTTPException(status_code=500, detail="Active LLM API key is not configured")
+
+        try:
+            result = rebuild_faiss_index(settings)
+            indexed_chunks = int(result.get("chunks", 0))
+            message = f"Saved {saved} document(s) and reindexed corpus"
+        except Exception as exc:
+            status = "partial"
+            message = f"Saved {saved} document(s), but reindex failed: {exc}"
+
+    return ManualIngestResponse(
+        status=status,
+        message=message,
+        saved_documents=saved,
+        indexed_chunks=indexed_chunks,
+    )
 
 
 @router.post("/reindex", response_model=StatusResponse)

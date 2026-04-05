@@ -29,6 +29,24 @@ class ScrapeRequest(BaseModel):
     urls: list[str] = Field(min_length=1)
 
 
+class ManualDocumentItem(BaseModel):
+    source_url: str = Field(min_length=1, max_length=2048)
+    title: str = Field(min_length=1, max_length=512)
+    text: str = Field(min_length=20)
+
+
+class ManualIngestRequest(BaseModel):
+    documents: list[ManualDocumentItem] = Field(min_length=1)
+    reindex: bool = False
+
+
+class ManualIngestResponse(BaseModel):
+    status: str
+    message: str
+    saved_documents: int = 0
+    indexed_chunks: int = 0
+
+
 class ScrapeResponse(BaseModel):
     job_id: str
     status: str
