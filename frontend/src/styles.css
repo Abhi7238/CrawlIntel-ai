@@ -276,8 +276,8 @@ textarea::placeholder {
 
   .chat-drawer {
     width: calc(100vw - 1rem);
-    height: min(78dvh, 560px);
-    max-height: min(78dvh, 560px);
+    height: min(62dvh, 460px);
+    max-height: min(62dvh, 460px);
     overflow: hidden;
   }
 
