@@ -151,8 +151,15 @@ textarea::placeholder {
 .chat-drawer {
   width: min(440px, calc(100vw - 1rem));
   max-height: min(70vh, 620px);
-  overflow: auto;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
   animation: fade-slide 0.2s ease;
+}
+
+.chat-drawer .result {
+  min-height: 0;
+  overflow: auto;
 }
 
 .chat-launcher {
@@ -261,11 +268,13 @@ textarea::placeholder {
 
   .chat-widget {
     right: 0.5rem;
-    bottom: 0.5rem;
+    bottom: calc(0.5rem + env(safe-area-inset-bottom));
   }
 
   .chat-drawer {
     width: calc(100vw - 1rem);
-    max-height: 68vh;
+    height: min(78dvh, 560px);
+    max-height: min(78dvh, 560px);
+    overflow: hidden;
   }
 }
