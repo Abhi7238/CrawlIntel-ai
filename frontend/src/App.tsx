@@ -30,6 +30,14 @@ function BotIcon() {
   );
 }
 
+function SendIcon() {
+  return (
+    <svg viewBox="0 0 24 24" className="send-icon" aria-hidden="true">
+      <path d="M4 12a1 1 0 0 1 1-1h10.59l-3.3-3.29a1 1 0 1 1 1.42-1.42l5 5a1 1 0 0 1 0 1.42l-5 5a1 1 0 1 1-1.42-1.42l3.3-3.29H5a1 1 0 0 1-1-1Z" />
+    </svg>
+  );
+}
+
 const API_BASE = import.meta.env.VITE_API_BASE ?? (window.location.hostname === "localhost" ? "http://localhost:8000" : "");
 
 function parseAnswer(answer: string): AnswerBlock {
@@ -247,21 +255,24 @@ export default function App() {
         </section>
 
         <section className="panel chat">
+          <h2 className="ask-heading">Ask Something</h2>
           <form onSubmit={onAsk} className="ask-form">
-            <label htmlFor="question-main">Ask something</label>
-            <textarea
-              id="question-main"
-              rows={2}
-              className="query-input"
-              ref={mainTextareaRef}
-              value={query}
-              onChange={onQueryChange}
-              onKeyDown={onQueryKeyDown}
-              placeholder="What does the documentation say about ..."
-            />
-            <button type="submit" disabled={!canAsk}>
-              {loading ? "Thinking..." : "Ask"}
-            </button>
+            <label htmlFor="question-main" className="sr-only">Ask something</label>
+            <div className="composer">
+              <textarea
+                id="question-main"
+                rows={2}
+                className="query-input"
+                ref={mainTextareaRef}
+                value={query}
+                onChange={onQueryChange}
+                onKeyDown={onQueryKeyDown}
+                placeholder="Ask something about your indexed content..."
+              />
+              <button type="submit" className="send-btn" disabled={!canAsk} aria-label="Send question">
+                <SendIcon />
+              </button>
+            </div>
           </form>
 
           {loading ? (
@@ -307,23 +318,26 @@ export default function App() {
           <section className="panel chat-drawer">
             <div className="drawer-brand" aria-label="CrawlIntel branding">
               <p className="drawer-eyebrow">CrawlIntel AI</p>
+              <h2 className="ask-heading drawer-heading">Ask Something</h2>
             </div>
 
             <form onSubmit={onAsk} className="ask-form">
-              <label htmlFor="question-widget">Ask something</label>
-              <textarea
-                id="question-widget"
-                rows={2}
-                className="query-input"
-                ref={widgetTextareaRef}
-                value={query}
-                onChange={onQueryChange}
-                onKeyDown={onQueryKeyDown}
-                placeholder="What does the documentation say about ..."
-              />
-              <button type="submit" disabled={!canAsk}>
-                {loading ? "Thinking..." : "Ask"}
-              </button>
+              <label htmlFor="question-widget" className="sr-only">Ask something</label>
+              <div className="composer">
+                <textarea
+                  id="question-widget"
+                  rows={2}
+                  className="query-input"
+                  ref={widgetTextareaRef}
+                  value={query}
+                  onChange={onQueryChange}
+                  onKeyDown={onQueryKeyDown}
+                  placeholder="Ask something about your indexed content..."
+                />
+                <button type="submit" className="send-btn" disabled={!canAsk} aria-label="Send question">
+                  <SendIcon />
+                </button>
+              </div>
             </form>
 
             {loading ? (
