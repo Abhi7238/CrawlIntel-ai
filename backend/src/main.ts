@@ -29,12 +29,23 @@ async function createApp(): Promise<Express> {
   app.use("/api", apiRouter);
 
   // Serve frontend if it exists
-  const frontendDist = path.join(__dirname, "../../frontend/dist");
+  // Check multiple locations for frontend dist
+  let frontendDist = path.join(__dirname, "../../frontend/dist");
+  if (!fs.existsSync(frontendDist)) {
+    // In Docker build, frontend is copied to dist-frontend at same level
+    frontendDist = path.join(__dirname, "../dist-frontend");
+  }
+  
   if (fs.existsSync(frontendDist)) {
     app.use(express.static(frontendDist));
     // SPA fallback
     app.get("*", (req: Request, res: Response) => {
       res.sendFile(path.join(frontendDist, "index.html"));
+    });
+  } else {
+    // Fallback if frontend not found
+    app.get("*", (req: Request, res: Response) => {
+      res.json({ message: "Frontend not available. API running at /api" });
     });
   }
 
