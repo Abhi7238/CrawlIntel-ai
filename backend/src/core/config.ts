@@ -1,7 +1,21 @@
 import * as dotenv from "dotenv";
 import * as path from "path";
+import * as fs from "fs";
 
-dotenv.config({ path: path.join(__dirname, "../.env") });
+const possibleEnvPaths = [
+  path.resolve(process.cwd(), ".env"),
+  path.resolve(process.cwd(), "../.env"),
+  path.resolve(__dirname, "../../.env"),
+  path.resolve(__dirname, "../../../.env"),
+  path.resolve(__dirname, "../.env"),
+];
+
+for (const envPath of possibleEnvPaths) {
+  if (fs.existsSync(envPath)) {
+    dotenv.config({ path: envPath });
+    break;
+  }
+}
 
 interface Settings {
   appName: string;
