@@ -29,20 +29,29 @@ async function createApp(): Promise<Express> {
   app.use("/api", apiRouter);
 
   // Serve frontend if it exists
-  // Check multiple locations for frontend dist
-  let frontendDist = path.join(__dirname, "../../frontend/dist");
-  if (!fs.existsSync(frontendDist)) {
-    // In Docker build, frontend is copied to dist-frontend at same level
-    frontendDist = path.join(__dirname, "../dist-frontend");
-  }
-  
-  if (fs.existsSync(frontendDist)) {
+  // Check multiple locations for frontend dist across dev, build, and Docker environments
+  const possibleFrontendPaths = [
+    path.resolve(process.cwd(), "../frontend/dist"),
+    path.resolve(process.cwd(), "frontend/dist"),
+    path.resolve(process.cwd(), "dist-frontend"),
+    path.resolve(process.cwd(), "../dist-frontend"),
+    path.resolve(__dirname, "../../../frontend/dist"),
+    path.resolve(__dirname, "../../frontend/dist"),
+    path.resolve(__dirname, "../../dist-frontend"),
+    path.resolve(__dirname, "../dist-frontend"),
+  ];
+
+  const frontendDist = possibleFrontendPaths.find((p) => fs.existsSync(p));
+
+  if (frontendDist) {
+    logger.info(`Serving frontend from: ${frontendDist}`);
     app.use(express.static(frontendDist));
     // SPA fallback
     app.get("*", (req: Request, res: Response) => {
       res.sendFile(path.join(frontendDist, "index.html"));
     });
   } else {
+    logger.warn("Frontend static directory not found. Serving API fallback response.");
     // Fallback if frontend not found
     app.get("*", (req: Request, res: Response) => {
       res.json({ message: "Frontend not available. API running at /api" });
