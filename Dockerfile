@@ -10,7 +10,7 @@ FROM node:20-alpine AS backend
 WORKDIR /app/backend
 
 COPY backend/package*.json ./
-RUN npm install --production
+RUN npm install
 
 COPY backend/ ./
 COPY --from=frontend-build /app/frontend/dist dist-frontend
